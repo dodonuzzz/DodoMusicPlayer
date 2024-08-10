@@ -3,6 +3,7 @@ from tkinter import *
 from PIL import Image, ImageTk
 import pygame
 import os
+from pydub import AudioSegment
 
 root = Tk()
 root.title('Dodo Music Player')
@@ -17,27 +18,44 @@ songs = []
 current_song = ""
 paused = False
 
+
+def convert_to_wav(file_path):
+    audio = AudioSegment.from_file(file_path)
+    wav_file_path = file_path.replace(".m4a", ".wav")
+    audio.export(wav_file_path, format="wav")
+    return wav_file_path
+
+
 def load_music():
     global current_song
-    root.directory = filedialog.askdirectory()
+    files = filedialog.askopenfilenames(
+        title="Dosya Seç",
+        filetypes=(("Music Files", "*.mp3 *.m4a *.wav"), ("All Files", "*.*"))
+    )
 
-    for song in os.listdir(root.directory):
-        name, ext = os.path.splitext(song)
-        if ext == '.mp3':
-            songs.append(song)
-            songlist.insert(END, song)
+    if files:
+        for file in files:
+            if file.endswith('.m4a'):
+                file = convert_to_wav(file)
+            songs.append(file)
+            songlist.insert(END, os.path.basename(file))
 
-    for song in songs:
-        songlist.insert(END, song)
+        songlist.selection_set(0)
+        current_song = songs[songlist.curselection()[0]]
+        print(f"Seçilen şarkı: {current_song}")
+    else:
+        print("Hiçbir dosya seçilmedi.")
 
-    songlist.selection_set(0)
-    current_song = songs[songlist.curselection()[0]]
 
 def play_music():
     global current_song, paused
 
+    if not current_song:
+        print('Şarkı seçilmedi.')
+        return
+
     if not paused:
-        pygame.mixer.music.load(os.path.join(root.directory, current_song))
+        pygame.mixer.music.load(current_song)
         pygame.mixer.music.play()
         print('Müzik oynatılıyor...')
     else:
@@ -52,6 +70,7 @@ def pause_music():
     pygame.mixer.music.pause()
     print('Müzik duraklatıldı.')
 
+
 def next_music():
     global current_song, paused
 
@@ -63,6 +82,7 @@ def next_music():
     except:
         pass
 
+
 def previous_music():
     global current_song, paused
 
@@ -73,6 +93,7 @@ def previous_music():
         play_music()
     except:
         pass
+
 
 organise_menu = Menu(menubar, tearoff=False)
 organise_menu.add_command(label="Dosya Seç", command=load_music)
@@ -89,7 +110,7 @@ pause_btn_image = ImageTk.PhotoImage(Image.open("pause.png").resize((32, 32)))
 previous_btn_image = ImageTk.PhotoImage(Image.open("previous.png").resize((32, 32)))
 next_btn_image = ImageTk.PhotoImage(Image.open("next.png").resize((32, 32)))
 
-play_btn = Button(control_frame, image=play_btn_image, borderwidth=2, command=play_music, bg = "green", fg = "white")
+play_btn = Button(control_frame, image=play_btn_image, borderwidth=2, command=play_music, bg="green", fg="white")
 pause_btn = Button(control_frame, image=pause_btn_image, borderwidth=2, command=pause_music)
 previous_btn = Button(control_frame, image=previous_btn_image, borderwidth=2, command=previous_music)
 next_btn = Button(control_frame, image=next_btn_image, borderwidth=2, command=next_music)
@@ -105,3 +126,7 @@ previous_btn.grid(row=0, column=0, padx=7, pady=10)
 next_btn.grid(row=0, column=3, padx=7, pady=10)
 
 root.mainloop()
+
+
+
+
